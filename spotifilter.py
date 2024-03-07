@@ -1,0 +1,123 @@
+import os
+import time
+import spotipy
+import requests
+from openai import OpenAI
+from dotenv import load_dotenv
+from lyricsgenius import Genius
+from spotipy.oauth2 import SpotifyClientCredentials
+
+# Load environment variables
+load_dotenv()
+SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
+SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
+GENIUS_API_KEY = os.getenv('GENIUS_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# Function to get playlist information
+def get_playlist_info(playlist_id):
+    auth_manager = SpotifyClientCredentials()
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+
+    try:
+        playlist = sp.playlist(playlist_id)
+        return playlist['name'], playlist['owner']['display_name'], playlist['tracks']['total']
+    except spotipy.SpotifyException as e:
+        if e.http_status == 404:
+            print("Playlist not found. Please check if the playlist ID is correct.")
+        else:
+            print("An error occurred:", e)
+        return None
+
+# Function to get playlist tracks
+def get_playlist_tracks(playlist_id):
+    auth_manager = SpotifyClientCredentials()
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+    track_list = []
+
+    try:
+        playlist = sp.playlist(playlist_id)
+        for track in playlist['tracks']['items']:
+            track_list.append((track['track']['name'], track['track']['artists'][0]['name']))
+        return track_list
+    except spotipy.SpotifyException as e:
+        if e.http_status == 404:
+            print("Playlist not found. Please check if the playlist ID is correct.")
+        else:
+            print("An error occurred:", e)
+        return None
+
+# Function to retrieve song lyrics
+def get_song_lyrics(title, artist):
+    genius = Genius(GENIUS_API_KEY)
+
+    try:
+        song_lyrics = genius.search_song(title, artist).lyrics
+        return song_lyrics
+    except requests.exceptions.Timeout as e:
+        print("An error occurred:", e)
+        return None
+
+# Function to check for explicit content in lyrics
+def check_explicitly(title, artist, lyrics):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    explicit_content = ['violence', 'sex', 'drugs', 'alcoholism', 'addiction', 'smoking', 'profanity']
+
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": "Your are a helpful assistant designed to determine whether a song contains explicit content. The explicit content should be listed by line numbers."},
+            {"role": "system", "content": f"List all lines containing explicit content related to {explicit_content} with line number, for given track lyrics"},
+            {"role": "system", "content": f"The first line in your response should be:\nTITLE: '{title}', ARTIST: '{artist}', EXPLICIT: TRUE/FALSE, REASONS: [].\nTRUE if contains explicit content, FALSE if not.\nREASONS should contain why it's considered explicit, with topics from this list: {explicit_content}"},
+            {"role": "user", "content": "Song: 'Hello', Artist: 'Adele', Lyrics:\nHello, it's me\nI was wondering if after all these years you'd like to meet\nTo go over everything"},
+            {"role": "assistant", "content": "TITLE: 'Hello', ARTIST: 'Adele', EXPLICIT: FALSE, REASONS: []."},
+            {"role": "user", "content": "Song: 'Leftovers', Artist: 'Dennis Lloyd', Lyrics:\nI'm a drunk and I will always be\nBegging, Baby, take my hand before I fall back down\nFuck, I'm about to lose it all"},
+            {"role": "assistant", "content": "TITLE: 'Leftovers', ARTIST: 'Dennis Lloyd', EXPLICIT: TRUE, REASONS: ['alcoholism', 'profanity'].\n- Line 1 - I'm a drunk and I will always be\n- Line 3 - Fuck, I'm about to lose it all"},
+            {"role": "user", "content": f"Song: '{title}', Artist: '{artist}', Lyrics:\n{lyrics}"},
+        ]
+    )
+
+    return completion.choices[0].message.content + "\n-----------------------------------------------------------------\n"
+
+# Main function
+def main():
+    playlist_id = input("Enter Spotify playlist id: ")
+    playlist = get_playlist_info(playlist_id)
+
+    if playlist:
+        playlist_name, playlist_author, playlist_total = playlist
+        print(f"Looking for explicit content in playlist '{playlist_name}' by '{playlist_author}':\n")
+
+        track_list = get_playlist_tracks(playlist_id)
+        explicit_counter = 0
+        explicit_tracks = []
+
+        for i, track in enumerate(track_list, start=1):
+            print(f"\n({i}/{playlist_total})")
+            title, artist = track
+            song_lyrics = get_song_lyrics(title, artist)
+
+            if song_lyrics:
+                explicitly_result = check_explicitly(title, artist, song_lyrics)
+                if 'EXPLICIT: TRUE' in explicitly_result:
+                    explicit_counter += 1
+                    explicit_tracks.append(explicitly_result)
+                time.sleep(5)
+
+        if explicit_counter == 0:
+            print("\n\nPlaylist is valid! No explicit content was found!")
+        else:
+            print(f"\n\nPlaylist contains {explicit_counter} explicit tracks and may not fit all audiences.")
+
+            user_input = input("Do you want to see why? (y/n): ").lower()
+            if user_input == 'y':
+                print("Proceeding...\n")
+                for track in explicit_tracks:
+                    print(track)
+            elif user_input == 'n':
+                print("Exiting...")
+            else:
+                print("Invalid input. Please enter 'y' or 'n'.")
+
+if __name__ == "__main__":
+    main()
