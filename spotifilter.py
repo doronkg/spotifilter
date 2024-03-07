@@ -7,12 +7,14 @@ from dotenv import load_dotenv
 from lyricsgenius import Genius
 from spotipy.oauth2 import SpotifyClientCredentials
 
+
 # Load environment variables
 load_dotenv()
 SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
 SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
 GENIUS_API_KEY = os.getenv('GENIUS_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 
 # Function to get playlist information
 def get_playlist_info(playlist_id):
@@ -28,6 +30,7 @@ def get_playlist_info(playlist_id):
         else:
             print("An error occurred:", e)
         return None
+
 
 # Function to get playlist tracks
 def get_playlist_tracks(playlist_id):
@@ -47,6 +50,7 @@ def get_playlist_tracks(playlist_id):
             print("An error occurred:", e)
         return None
 
+
 # Function to retrieve song lyrics
 def get_song_lyrics(title, artist):
     genius = Genius(GENIUS_API_KEY)
@@ -57,6 +61,7 @@ def get_song_lyrics(title, artist):
     except requests.exceptions.Timeout as e:
         print("An error occurred:", e)
         return None
+
 
 # Function to check for explicit content in lyrics
 def check_explicitly(title, artist, lyrics):
@@ -78,6 +83,7 @@ def check_explicitly(title, artist, lyrics):
     )
 
     return completion.choices[0].message.content + "\n-----------------------------------------------------------------\n"
+
 
 # Main function
 def main():
@@ -118,6 +124,7 @@ def main():
                 print("Exiting...")
             else:
                 print("Invalid input. Please enter 'y' or 'n'.")
+
 
 if __name__ == "__main__":
     main()
