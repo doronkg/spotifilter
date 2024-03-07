@@ -10,8 +10,6 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 # Load environment variables
 load_dotenv()
-SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
-SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
 GENIUS_API_KEY = os.getenv('GENIUS_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
