@@ -7,15 +7,15 @@ from dotenv import load_dotenv
 from lyricsgenius import Genius
 from spotipy.oauth2 import SpotifyClientCredentials
 
+
 # Load environment variables
 load_dotenv()
-SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
-SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
 GENIUS_API_KEY = os.getenv('GENIUS_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# Function to get playlist information
+
 def get_playlist_info(playlist_id):
+    """Return the playlist information."""
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
 
@@ -29,8 +29,9 @@ def get_playlist_info(playlist_id):
             print("An error occurred:", e)
         return None
 
-# Function to get playlist tracks
+
 def get_playlist_tracks(playlist_id):
+    """Return playlist tracks."""
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
     track_list = []
@@ -47,8 +48,9 @@ def get_playlist_tracks(playlist_id):
             print("An error occurred:", e)
         return None
 
-# Function to retrieve song lyrics
+
 def get_song_lyrics(title, artist):
+    """Return song lyrics."""
     genius = Genius(GENIUS_API_KEY)
 
     try:
@@ -58,8 +60,9 @@ def get_song_lyrics(title, artist):
         print("An error occurred:", e)
         return None
 
-# Function to check for explicit content in lyrics
+
 def check_explicitly(title, artist, lyrics):
+    """Check for explicit content in lyrics."""
     client = OpenAI(api_key=OPENAI_API_KEY)
     explicit_content = ['violence', 'sex', 'drugs', 'alcoholism', 'addiction', 'smoking', 'profanity']
 
@@ -79,7 +82,7 @@ def check_explicitly(title, artist, lyrics):
 
     return completion.choices[0].message.content + "\n-----------------------------------------------------------------\n"
 
-# Main function
+
 def main():
     playlist_id = input("Enter Spotify playlist id: ")
     playlist = get_playlist_info(playlist_id)
@@ -118,6 +121,7 @@ def main():
                 print("Exiting...")
             else:
                 print("Invalid input. Please enter 'y' or 'n'.")
+
 
 if __name__ == "__main__":
     main()
