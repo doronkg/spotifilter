@@ -104,7 +104,7 @@ def check_explicitly(title, artist, lyrics):
                 ", FALSE if not.\nREASONS should contain why it's considered explicit, with one or "
                 f"more topics from this list: {explicit_content}\n."
                 "3. Squash the line numbers of repeated lines from the output.\n"
-                "4. Cencor profanity words in the output.\n",
+                "4. Censor profanity words in the output.\n",
             },
             {
                 "role": "user",
