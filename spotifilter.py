@@ -2,19 +2,26 @@
 , ensuring a clean and family-friendly listening experience."""
 
 import os
+import sys
 import time
 import spotipy
 import requests
+from typing import Final
 from openai import OpenAI
 from dotenv import load_dotenv
 from lyricsgenius import Genius
 from spotipy.oauth2 import SpotifyClientCredentials
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 
 # Load environment variables
 load_dotenv()
-GENIUS_API_KEY = os.getenv("GENIUS_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GENIUS_API_KEY: Final = os.getenv("GENIUS_API_KEY")
+OPENAI_API_KEY: Final = os.getenv("OPENAI_API_KEY")
+BOT_TOKEN: Final = os.getenv("TELEGRAM_TOKEN")
+BOT_USERNAME: Final = os.getenv("TELEGRAM_USERNAME")
+BOT_POLLING_INTERVAL: Final = int(os.getenv("POLLING_INTERVAL", 5))
 
 
 def get_playlist_info(playlist_id):
@@ -153,6 +160,33 @@ def check_explicitly(title, artist, lyrics):
     )
 
 
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Welcome to Spotifilter!")
+
+
+async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Unimplemented")
+
+
+async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print(f"An error occurred in {update}: {context.error}")
+
+
+def run_telegram_bot():
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    # Commands
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("filter", filter_command))
+
+    # Errors
+    app.add_error_handler(handle_error)
+
+    # Run bot
+    print("Polling...")
+    app.run_polling(poll_interval=BOT_POLLING_INTERVAL)
+
+
 def main():
     """Track filtering starts here"""
     playlist_id = input("Enter Spotify playlist id: ")
@@ -200,4 +234,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1] == 'bot':
+        run_telegram_bot()
+    else:
+        main()
