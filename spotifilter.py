@@ -24,7 +24,7 @@ BOT_USERNAME: Final = os.getenv("TELEGRAM_USERNAME")
 BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", 0.0))
 
 
-def get_playlist_info(playlist_id):
+def get_playlist_info(playlist_id: str) -> str:
     """Return the playlist information."""
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
@@ -32,16 +32,16 @@ def get_playlist_info(playlist_id):
     try:
         playlist = sp.playlist(playlist_id)
         return (
-            playlist["name"],
-            playlist["owner"]["display_name"],
-            playlist["tracks"]["total"],
+            True,
+            "Looking for explicit content in playlist " \
+            f"'{playlist['name']}' by '{ playlist['owner']['display_name']}'... 🔍",
+            [ playlist["name"], playlist["owner"]["display_name"], playlist["tracks"]["total"], ]
         )
     except spotipy.SpotifyException as e:
         if e.http_status == 404:
-            print("Playlist not found. Please check if the playlist ID is correct.")
+            return False, "Playlist not found. Please check if the playlist ID is correct.", None
         else:
-            print("An error occurred:", e)
-        return None
+            return False, "An error occurred. Validate your input and retry, or run '/report'", e
 
 
 def get_playlist_tracks(playlist_id):
@@ -168,7 +168,7 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not context.args:
         await update.message.reply_text("You need to provide a playlist ID after the /filter command.")
     else:
-        await update.message.reply_text(f"Generating report for {context.args[0]}...")
+        await update.message.reply_text(get_playlist_info(context.args[0])[1])
         loop = asyncio.get_event_loop()
         report = await loop.run_in_executor(None, logic, context.args[0])
         await update.message.reply_text(report)
@@ -209,13 +209,10 @@ def main():
 
 def logic(playlist_id: str) -> str:
     """Track filtering starts here"""
-    playlist = get_playlist_info(playlist_id)
+    status, message, result = get_playlist_info(playlist_id)
 
-    if playlist:
-        playlist_name, playlist_author, playlist_total = playlist
-        print(
-            f"Looking for explicit content in playlist '{playlist_name}' by '{playlist_author}':\n"
-        )
+    if status:
+        playlist_name, playlist_author, playlist_total = result
 
         track_list = get_playlist_tracks(playlist_id)
         explicit_counter = 0
