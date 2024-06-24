@@ -5,6 +5,7 @@ import os
 import time
 import spotipy
 import requests
+import asyncio
 from typing import Final
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -168,7 +169,8 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("You need to provide a playlist ID after the /filter command.")
     else:
         await update.message.reply_text(f"Generating report for {context.args[0]}...")
-        report = logic(context.args[0])
+        loop = asyncio.get_event_loop()
+        report = await loop.run_in_executor(None, logic, context.args[0])
         await update.message.reply_text(report)
 
 
