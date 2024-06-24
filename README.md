@@ -115,6 +115,12 @@ TITLE: 'Aura', ARTIST: 'Dennis Lloyd', EXPLICIT: TRUE, REASONS: ['sex'].
 -----------------------------------------------------------------
 ```
 
+# Running in Docker
+
+```
+$ docker run -e SPOTIPY_CLIENT_ID=<> -e SPOTIPY_CLIENT_SECRET=<> -e GENIUS_API_KEY=<> -e OPENAI_API_KEY=<> -e TELEGRAM_TOKEN=<> -e TELEGRAM_USERNAME=spotifilter_bot -d doronkg/spotifilter:latest
+```
+
 # Contributing
 
 Contributions are welcome! If you encounter any bugs or have suggestions for improvements, please open an issue in the [issue tracker](https://github.com/doronkg/spotifilter/issues).
