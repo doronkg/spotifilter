@@ -156,7 +156,7 @@ def check_explicitly(title, artist, lyrics):
 
     return (
         completion.choices[0].message.content
-        + "\n-----------------------------------------------------------------\n"
+        + "\n\n"
     )
 
 
@@ -165,14 +165,20 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Unimplemented")
+    playlist_id = update.message.text.lstrip("/filter").strip()
+    if playlist_id == "":
+        await update.message.reply_text("You need to provide a playlist ID after the /filter command.")
+    else:
+        await update.message.reply_text(f"Generating report for {playlist_id}...")
+        report = logic(playlist_id)
+        await update.message.reply_text(report)
 
 
 async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(f"An error occurred in {update}: {context.error}")
 
 
-def run_telegram_bot():
+def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     # Commands
@@ -187,9 +193,8 @@ def run_telegram_bot():
     app.run_polling(poll_interval=BOT_POLLING_INTERVAL)
 
 
-def main():
+def logic(playlist_id: str) -> str:
     """Track filtering starts here"""
-    playlist_id = input("Enter Spotify playlist id: ")
     playlist = get_playlist_info(playlist_id)
 
     if playlist:
@@ -215,26 +220,15 @@ def main():
                 time.sleep(3)
 
         if explicit_counter == 0:
-            print("\n\nPlaylist is valid! No explicit content was found!")
+            return "\n\nPlaylist is valid! No explicit content was found!"
         else:
-            print(
-                f"\n\nPlaylist contains {explicit_counter} explicit tracks "
-                "and may not fit all audiences."
-            )
+            response = f"\n\n🔉🔉🔉\nPlaylist contains {explicit_counter} explicit tracks " \
+                       "and may not fit all audiences.\n"
+            for track in explicit_tracks:
+                response += "\n" + track
 
-            user_input = input("Do you want to see why? (y/n): ").lower()
-            if user_input == "y":
-                print("Proceeding...\n")
-                for track in explicit_tracks:
-                    print(track)
-            elif user_input == "n":
-                print("Exiting...")
-            else:
-                print("Invalid input. Please enter 'y' or 'n'.")
+            return response
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == 'bot':
-        run_telegram_bot()
-    else:
-        main()
+    main()
