@@ -20,7 +20,7 @@ GENIUS_API_KEY: Final = os.getenv("GENIUS_API_KEY")
 OPENAI_API_KEY: Final = os.getenv("OPENAI_API_KEY")
 BOT_TOKEN: Final = os.getenv("TELEGRAM_TOKEN")
 BOT_USERNAME: Final = os.getenv("TELEGRAM_USERNAME")
-BOT_POLLING_INTERVAL: Final = int(os.getenv("POLLING_INTERVAL", 5))
+BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", 0.0))
 
 
 def get_playlist_info(playlist_id):
@@ -164,12 +164,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    playlist_id = update.message.text.lstrip("/filter").strip()
-    if playlist_id == "":
+    if not context.args:
         await update.message.reply_text("You need to provide a playlist ID after the /filter command.")
     else:
-        await update.message.reply_text(f"Generating report for {playlist_id}...")
-        report = logic(playlist_id)
+        await update.message.reply_text(f"Generating report for {context.args[0]}...")
+        report = logic(context.args[0])
         await update.message.reply_text(report)
 
 
@@ -178,17 +177,25 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                     "https://github.com/doronkg/spotifilter/issues")
 
 
+async def handle_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("I don't know what it is.")
+
+
 async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(f"An error occurred in {update}: {context.error}")
 
 
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).concurrent_updates(True).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("filter", filter_command))
     app.add_handler(CommandHandler("report", report_command))
+
+    # Messages
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_unknown))
+    app.add_handler(MessageHandler(filters.COMMAND, handle_unknown))
 
     # Errors
     app.add_error_handler(handle_error)
