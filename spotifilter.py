@@ -174,6 +174,11 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(report)
 
 
+async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Please send any reports or bugs to us here: "
+                                    "https://github.com/doronkg/spotifilter/issues")
+
+
 async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(f"An error occurred in {update}: {context.error}")
 
@@ -184,6 +189,7 @@ def main():
     # Commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("filter", filter_command))
+    app.add_handler(CommandHandler("report", report_command))
 
     # Errors
     app.add_error_handler(handle_error)
