@@ -24,7 +24,7 @@ BOT_USERNAME: Final = os.getenv("TELEGRAM_USERNAME")
 BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", 0.0))
 
 
-def get_playlist_info(playlist_id: str) -> str:
+def get_playlist_info(playlist_id: str) -> tuple[bool, str, list]:
     """Return the playlist information."""
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
@@ -39,9 +39,9 @@ def get_playlist_info(playlist_id: str) -> str:
         )
     except spotipy.SpotifyException as e:
         if e.http_status == 404:
-            return False, "Playlist not found. Please check if the playlist ID is correct.", None
+            return False, "Playlist not found. Please check if the playlist ID is correct.", []
         else:
-            return False, "An error occurred. Validate your input and retry, or run '/report'", e
+            return False, "An error occurred. Validate your input and retry, or run '/report'", []
 
 
 def get_playlist_tracks(playlist_id):
