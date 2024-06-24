@@ -2,7 +2,6 @@
 , ensuring a clean and family-friendly listening experience."""
 
 import os
-import sys
 import time
 import spotipy
 import requests
