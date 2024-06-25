@@ -35,6 +35,12 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          cat ~/.kube/config
+
+      - name: Verify Kubernetes config
+        run: kubectl config view
+        env:
+          KUBECONFIG: ~/.kube/config
 
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter -n spotifilter
