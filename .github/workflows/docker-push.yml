@@ -34,31 +34,7 @@ jobs:
       - name: Set up Kubernetes config
         run: |
           mkdir -p ~/.kube
-          cat <<EOF > ~/.kube/config
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - cluster:
-              insecure-skip-tls-verify: true
-              server: https://${{ vars.KUBE_URL }}
-            name: ${{ vars.KUBE_URL }}
-          contexts:
-          - context:
-              cluster: ${{ vars.KUBE_URL }}
-              namespace: spotifilter
-              user: ${{ vars.KUBE_USERNAME }}/${{ vars.KUBE_URL }}
-            name: spotifilter/${{ vars.KUBE_URL }}/${{ vars.KUBE_USERNAME }}
-          current-context: spotifilter/${{ vars.KUBE_URL }}/${{ vars.KUBE_USERNAME }}
-          users:
-          - name: ${{ vars.KUBE_USERNAME }}
-            user:
-              username: ${{ vars.KUBE_USERNAME }}
-              password: ${{ secrets.KUBE_PASSWORD }}
-          EOF
-        env:
-          KUBECONFIG: ~/.kube/config
+          echo ${{ vars.KUBE_CONFIG }} ~/.kube/config
 
       - name: Rollout Deployment
-        run: kubectl rollout restart deployment spotifilter
-        env:
-          KUBECONFIG: ~/.kube/config
+        run: kubectl rollout restart deployment spotifilter -n spotifilter
