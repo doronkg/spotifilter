@@ -58,6 +58,3 @@ jobs:
 
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter
-        with:
-          username: ${{ vars.KUBERNETES_USERNAME }}
-          password: ${{ secrets.KUBERNETES_TOKEN }}
