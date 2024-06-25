@@ -31,8 +31,33 @@ jobs:
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
 
+      - name: Set up Kubernetes config
+        run: |
+          mkdir -p ~/.kube
+          cat <<EOF > ~/.kube/config
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              insecure-skip-tls-verify: true
+              server: https://${{ vars.KUBE_URL }}
+            name: ${{ vars.KUBE_URL }}
+          contexts:
+          - context:
+              cluster: ${{ vars.KUBE_URL }}
+              namespace: spotifilter
+              user: ${{ vars.KUBE_USERNAME }}/${{ vars.KUBE_URL }}
+            name: spotifilter/${{ vars.KUBE_URL }}/${{ vars.KUBE_USERNAME }}
+          current-context: spotifilter/${{ vars.KUBE_URL }}/${{ vars.KUBE_USERNAME }}
+          users:
+          - name: ${{ vars.KUBE_USERNAME }}
+            user:
+              username: ${{ vars.KUBE_USERNAME }}
+              password: ${{ secrets.KUBE_PASSWORD }}
+          EOF
+
       - name: Rollout Deployment
-        run: kubectl rollout restart deployment spotifilter -n spotifilter
+        run: kubectl rollout restart deployment spotifilter
         with:
           username: ${{ vars.KUBERNETES_USERNAME }}
           password: ${{ secrets.KUBERNETES_TOKEN }}
