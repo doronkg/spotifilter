@@ -55,6 +55,10 @@ jobs:
               username: ${{ vars.KUBE_USERNAME }}
               password: ${{ secrets.KUBE_PASSWORD }}
           EOF
+        env:
+          KUBECONFIG: ~/.kube/config
 
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter
+        env:
+          KUBECONFIG: ~/.kube/config
