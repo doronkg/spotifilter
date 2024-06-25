@@ -3,7 +3,6 @@ name: Deployment
 on:
   push:
     branches:
-      - kubernetes
       - main
 
 jobs:
@@ -30,8 +29,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
-
-      - name: Rollout Deployment
-        run: kubectl rollout restart deployment spotifilter -n spotifilter
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
