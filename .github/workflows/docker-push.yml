@@ -38,3 +38,5 @@ jobs:
 
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter -n spotifilter
+        env:
+          KUBECONFIG: ~/.kube/config
