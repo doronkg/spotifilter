@@ -31,18 +31,7 @@ jobs:
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
 
-      - name: Set up Kubernetes config
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
-          cat ~/.kube/config
-
-      - name: Verify Kubernetes config
-        run: kubectl config view
-        env:
-          KUBECONFIG: ~/.kube/config
-
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter -n spotifilter
         env:
-          KUBECONFIG: ~/.kube/config
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
