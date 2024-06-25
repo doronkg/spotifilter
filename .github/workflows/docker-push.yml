@@ -34,7 +34,7 @@ jobs:
       - name: Set up Kubernetes config
         run: |
           mkdir -p ~/.kube
-          echo ${{ secrets.KUBE_CONFIG }} ~/.kube/config
+          echo ${{ secrets.KUBE_CONFIG }} > ~/.kube/config
 
       - name: Rollout Deployment
         run: kubectl rollout restart deployment spotifilter -n spotifilter
