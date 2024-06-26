@@ -156,14 +156,11 @@ def format_explicit_result(explicitly_result):
     if result:
         title, artist, _, reasons, examples = result[0]
         examples = re.sub(r'\*', r'\\*', examples)
-
-        return (
-            re.sub(rf'([{re.escape(escaped_chars)}])', r'\\\1',
-            str(f"🔞 *Title:* {title}\n"
-            f"🎤 *Artist:* {artist}\n"
-            f"📜 *Reasons:* {reasons}\n\n"
-            f"*Examples:* {examples}"))
-        )
+        message = str(f"🔞 *Title:* {title}\n"
+                      f"🎤 *Artist:* {artist}\n"
+                      f"📜 *Reasons:* {reasons}\n\n"
+                      f"*Examples:* {examples}")
+        return re.sub(f'([{re.escape(escaped_chars)}])', r'\\\1', message)
     return "ERROR"
 
 
@@ -248,7 +245,7 @@ def logic(playlist_id: str) -> str:
                 time.sleep(3)
 
         if explicit_counter == 0:
-            return "\n\nPlaylist is valid! No explicit content was found!"
+            return "\n\nPlaylist is valid, no explicit content was found ✔️"
         else:
             response = (
                 f"\n\n🔉🔉🔉\n"
