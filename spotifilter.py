@@ -1,19 +1,21 @@
-"""Spotifilter harnesses ChatGPT to effortlessly filter explicit tracks from your Spotify playlists\
-, ensuring a clean and family-friendly listening experience."""
+"""Spotifilter harnesses ChatGPT to effortlessly filter explicit tracks from your Spotify playlists,
+ensuring a clean and family-friendly listening experience."""
 
-import os
-import time
-import spotipy
-import requests
 import asyncio
+import os
+import re
+import time
 from typing import Final
-from openai import OpenAI
+
+import requests
+import spotipy
 from dotenv import load_dotenv
 from lyricsgenius import Genius
+from openai import OpenAI
 from spotipy.oauth2 import SpotifyClientCredentials
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-
+from telegram.constants import ChatAction, ParseMode
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Load environment variables
 load_dotenv()
@@ -21,8 +23,14 @@ GENIUS_API_KEY: Final = os.getenv("GENIUS_API_KEY")
 OPENAI_API_KEY: Final = os.getenv("OPENAI_API_KEY")
 BOT_TOKEN: Final = os.getenv("TELEGRAM_TOKEN")
 BOT_USERNAME: Final = os.getenv("TELEGRAM_USERNAME")
-BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", 0.0))
+BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", "0.0"))
 
+def validate_playlist_id(playlist_id: str) -> bool:
+    """Validate the given Spotify playlist ID / playlist full link"""
+    playlist_id_pattern = re.compile(
+        r'^(?:https://open\.spotify\.com/playlist/|spotify:playlist:)?([0-9a-zA-Z]{22})(?:\?.*)?$'
+    )
+    return bool(playlist_id_pattern.match(playlist_id))
 
 def get_playlist_info(playlist_id: str) -> tuple[bool, str, list]:
     """Return the playlist information."""
@@ -39,7 +47,8 @@ def get_playlist_info(playlist_id: str) -> tuple[bool, str, list]:
         )
     except spotipy.SpotifyException as e:
         if e.http_status == 404:
-            return False, "Playlist not found. Please check if the playlist ID is correct.", []
+            return False, \
+                "Playlist not found. Please check if the playlist ID / link is correct.", []
         else:
             return False, "An error occurred. Validate your input and retry, or run '/report'", []
 
@@ -59,7 +68,7 @@ def get_playlist_tracks(playlist_id):
         return track_list
     except spotipy.SpotifyException as e:
         if e.http_status == 404:
-            print("Playlist not found. Please check if the playlist ID is correct.")
+            print("Playlist not found. Please check if the playlist ID / link is correct.")
         else:
             print("An error occurred:", e)
         return None
@@ -97,21 +106,20 @@ def check_explicitly(title, artist, lyrics):
             {
                 "role": "system",
                 "content": "Your are a helpful assistant designed to determine if a track contains "
-                "explicit content, to ensure a clean and family-friendly listening experience\n"
-                "The explicit content should be listed by line numbers.",
+                "explicit content which should be listed by line numbers.",
             },
             {
                 "role": "system",
                 "content": "For each track lyrics, go through these steps:\n"
-                "Firstly, remove stanza lines ([Chorus], [Bridge], etc...).\n"
                 "1. List every line containing explicit content related to one or more "
                 f"topics: {explicit_content} with line number.\n"
                 "2. The header of your response should be:\nTITLE: 'title', ARTIST: "
-                "'artist', EXPLICIT: TRUE/FALSE, REASONS: [].\nTRUE if contains explicit content"
-                ", FALSE if not.\nREASONS should contain why it's considered explicit, with one or "
+                "'artist', EXPLICIT: TRUE/FALSE, REASONS: [], EXAMPLES: \n"
+                "TRUE if contains explicit content, FALSE if not.\n"
+                "REASONS should contain why it's considered explicit, with one or "
                 f"more topics from this list: {explicit_content}\n."
                 "3. Squash the line numbers of repeated lines from the output.\n"
-                "4. Censor profanity words in the output.\n",
+                "4. Censor profanity words in the output.\n"
             },
             {
                 "role": "user",
@@ -122,30 +130,9 @@ def check_explicitly(title, artist, lyrics):
             {
                 "role": "assistant",
                 "content": "TITLE: 'Leftovers', ARTIST: 'Dennis Lloyd', EXPLICIT: TRUE, REASONS: "
-                "['alcoholism', 'profanity'].\n- Line 1 - I'm a drunk and I will always be\n"
+                "['alcoholism', 'profanity'], EXAMPLES: \n"
+                "- Line 1 - I'm a drunk and I will always be\n"
                 "- Lines [3-4] - F***, I'm about to lose it all",
-            },
-            {
-                "role": "user",
-                "content": "Song: 'Hello', Artist: 'Adele', Lyrics:\nHello, it's me\nI was "
-                "wondering if after all these years you'd like to meet\nTo go over everything",
-            },
-            {
-                "role": "assistant",
-                "content": "TITLE: 'Hello', ARTIST: 'Adele', EXPLICIT: FALSE, REASONS: [].",
-            },
-            {
-                "role": "user",
-                "content": "Song: 'Playa (Say That)', Artist: 'Dennis Lloyd', Lyrics:\nHow could "
-                "you say that\nHow could you fucking say that\nHow could you say that\nHow could "
-                "you fucking say that\nBaby hold on, baby hold on\nSay my motherfuckin name\nWhile "
-                "we're fuckin all night long",
-            },
-            {
-                "role": "assistant",
-                "content": "TITLE: 'Playa (Say That)', ARTIST: 'Dennis Lloyd', EXPLICIT: TRUE, "
-                "REASONS: ['profanity', 'sex'].\n- Lines [2, 4] - How could you f***ing say that\n"
-                "- Line 6 - Say my motherf***in name\n- Line 7 - While we're f***in all night long",
             },
             {
                 "role": "user",
@@ -159,20 +146,50 @@ def check_explicitly(title, artist, lyrics):
         + "\n\n"
     )
 
+def format_explicit_result(explicitly_result):
+    """Format explicit content detection result for Telegram message."""
+    escaped_chars = r'_[]()~`>#+-=|{}.!'
+    pattern = \
+        r"TITLE: '(.*?)', ARTIST: '(.*?)', EXPLICIT: (.*?), REASONS: \[(.*?)\], EXAMPLES: (.*)"
+    result = re.findall(pattern, explicitly_result, re.DOTALL)
+
+    if result:
+        title, artist, _, reasons, examples = result[0]
+        examples = re.sub(r'\*', r'\\*', examples)
+
+        return (
+            re.sub(rf'([{re.escape(escaped_chars)}])', r'\\\1',
+            str(f"🔞 *Title:* {title}\n"
+            f"🎤 *Artist:* {artist}\n"
+            f"📜 *Reasons:* {reasons}\n\n"
+            f"*Examples:* {examples}"))
+        )
+    return "ERROR"
+
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Welcome to Spotifilter!")
 
+async def send_typing_action(context, chat_id):
+    while True:
+        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+        await asyncio.sleep(5)
 
 async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
-        await update.message.reply_text("You need to provide a playlist ID after the /filter command.")
+        await update.message.reply_text(\
+            "You need to provide a playlist ID / link after the /filter command.")
+    elif not validate_playlist_id(context.args[0]):
+        await update.message.reply_text("Playlist ID / link is invalid.")
     else:
-        await update.message.reply_text(get_playlist_info(context.args[0])[1])
-        loop = asyncio.get_event_loop()
-        report = await loop.run_in_executor(None, logic, context.args[0])
-        await update.message.reply_text(report)
-
+        valid, message, _ = get_playlist_info(context.args[0])
+        await update.message.reply_text(message)
+        if valid:
+            typing_task = asyncio.create_task(send_typing_action(context, update.effective_chat.id))
+            loop = asyncio.get_event_loop()
+            report = await loop.run_in_executor(None, logic, context.args[0])
+            typing_task.cancel()
+            await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
 
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Please send any reports or bugs to us here: "
@@ -209,10 +226,10 @@ def main():
 
 def logic(playlist_id: str) -> str:
     """Track filtering starts here"""
-    status, message, result = get_playlist_info(playlist_id)
+    status, _, result = get_playlist_info(playlist_id)
 
     if status:
-        playlist_name, playlist_author, playlist_total = result
+        _, _, playlist_total = result
 
         track_list = get_playlist_tracks(playlist_id)
         explicit_counter = 0
@@ -227,14 +244,17 @@ def logic(playlist_id: str) -> str:
                 explicitly_result = check_explicitly(title, artist, song_lyrics)
                 if "EXPLICIT: TRUE" in explicitly_result:
                     explicit_counter += 1
-                    explicit_tracks.append(explicitly_result)
+                    explicit_tracks.append(format_explicit_result(explicitly_result))
                 time.sleep(3)
 
         if explicit_counter == 0:
             return "\n\nPlaylist is valid! No explicit content was found!"
         else:
-            response = f"\n\n🔉🔉🔉\nPlaylist contains {explicit_counter} explicit tracks " \
-                       "and may not fit all audiences.\n"
+            response = (
+                f"\n\n🔉🔉🔉\n"
+                f"Playlist contains {explicit_counter} explicit tracks "
+                f"and may not fit all audiences‼️\n"
+            )
             for track in explicit_tracks:
                 response += "\n" + track
 
