@@ -51,7 +51,7 @@ def get_playlist_info(playlist_id: str) -> tuple[bool, str, list]:
             return False, \
                 "Playlist not found. Please check if the playlist ID / link is correct.", []
         else:
-            return False, "An error occurred. Validate your input and retry, or run '/report'", []
+            return False, "An error occurred. Validate your input and retry, or run /report", []
 
 
 def get_playlist_tracks(playlist_id):
@@ -193,10 +193,15 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             typing_task.cancel()
 
             try:
-                await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
+                if len(report) > 4096:
+                    for x in range(0, len(report), 4096):
+                        await update.message.reply_text(report[x:x+4096], parse_mode=ParseMode.MARKDOWN_V2)
+                else:
+                    await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
+                #await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
             except TelegramError as e:
                 print(e)
-                await update.message.reply_text("An error occurred. Validate your input and retry, or run '/report'")
+                await update.message.reply_text("An error occurred. Validate your input and retry, or run /report")
 
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Please send any reports or bugs to us here: "
