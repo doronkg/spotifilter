@@ -111,14 +111,14 @@ def check_explicitly(title, artist, lyrics):
             {
                 "role": "system",
                 "content": "For each track lyrics, go through these steps:\n"
-                "1. List every line containing explicit content related to one or more "
+                "1. Check every line containing explicit content related to one or more "
                 f"topics: {explicit_content} with line number.\n"
                 "2. The header of your response should be:\nTITLE: 'title', ARTIST: "
                 "'artist', EXPLICIT: TRUE/FALSE, REASONS: [], EXAMPLES: \n"
                 "TRUE if contains explicit content, FALSE if not.\n"
                 "REASONS should contain why it's considered explicit, with one or "
                 f"more topics from this list: {explicit_content}\n."
-                "3. Squash the line numbers of repeated lines from the output.\n"
+                "3. Provide only 2 examples of explicit lines with line numbers, at least one for each topic.\n"
                 "4. Censor profanity words in the output.\n"
             },
             {
