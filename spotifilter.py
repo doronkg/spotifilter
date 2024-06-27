@@ -15,6 +15,7 @@ from openai import OpenAI
 from spotipy.oauth2 import SpotifyClientCredentials
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
+from telegram.error import TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Load environment variables
@@ -146,9 +147,12 @@ def check_explicitly(title, artist, lyrics):
         + "\n\n"
     )
 
+def parse_response(response):
+    escaped_chars = r'_[]()~`>#+-=|{}.!'
+    return re.sub(f'([{re.escape(escaped_chars)}])', r'\\\1', response)
+
 def format_explicit_result(explicitly_result):
     """Format explicit content detection result for Telegram message."""
-    escaped_chars = r'_[]()~`>#+-=|{}.!'
     pattern = \
         r"TITLE: '(.*?)', ARTIST: '(.*?)', EXPLICIT: (.*?), REASONS: \[(.*?)\], EXAMPLES: (.*)"
     result = re.findall(pattern, explicitly_result, re.DOTALL)
@@ -161,7 +165,7 @@ def format_explicit_result(explicitly_result):
                       f"🎤 *Artist:* {artist}\n"
                       f"📜 *Reasons:* {reasons}\n\n"
                       f"*Examples:* {examples}")
-        return re.sub(f'([{re.escape(escaped_chars)}])', r'\\\1', message)
+        return message
     return "ERROR"
 
 
@@ -187,7 +191,12 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             loop = asyncio.get_event_loop()
             report = await loop.run_in_executor(None, logic, context.args[0])
             typing_task.cancel()
-            await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
+
+            try:
+                await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
+            except TelegramError as e:
+                print(e)
+                await update.message.reply_text("An error occurred. Validate your input and retry, or run '/report'")
 
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Please send any reports or bugs to us here: "
@@ -232,6 +241,7 @@ def logic(playlist_id: str) -> str:
         track_list = get_playlist_tracks(playlist_id)
         explicit_counter = 0
         explicit_tracks = []
+        unfetched_tracks = []
 
         for i, track in enumerate(track_list, start=1):
             print(f"\n({i}/{playlist_total})")
@@ -244,9 +254,12 @@ def logic(playlist_id: str) -> str:
                     explicit_counter += 1
                     explicit_tracks.append(format_explicit_result(explicitly_result))
                 time.sleep(3)
+            else:
+                unfetched_tracks.append(f"- {title}\n")
+
 
         if explicit_counter == 0:
-            return "\n\nPlaylist is valid, no explicit content was found ✔️"
+            response = "\n\nPlaylist is valid, no explicit content was found ✔️\n"
         else:
             response = (
                 f"\n\n🔉🔉🔉\n"
@@ -256,7 +269,11 @@ def logic(playlist_id: str) -> str:
             for track in explicit_tracks:
                 response += "\n" + track
 
-            return response
+        if len(unfetched_tracks) > 0:
+            response += "\nCouldn't fetch lyrics for these tracks:\n"
+            for track in unfetched_tracks:
+                response += track
+        return parse_response(response)
 
 
 if __name__ == "__main__":
