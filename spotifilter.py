@@ -28,7 +28,7 @@ BOT_POLLING_INTERVAL: Final = float(os.getenv("POLLING_INTERVAL", "0.0"))
 def validate_playlist_id(playlist_id: str) -> bool:
     """Validate the given Spotify playlist ID / playlist full link"""
     playlist_id_pattern = re.compile(
-        r'^(?:https://open\.spotify\.com/playlist/|spotify:playlist:)?([0-9a-zA-Z]{22})(?:\?.*)?$'
+        r'^(?:https://open\.spotify\.com/playlist/|spotify:playlist:)?([0-9a-zA-Z]+)(?:\?.*)?$'
     )
     return bool(playlist_id_pattern.match(playlist_id))
 
