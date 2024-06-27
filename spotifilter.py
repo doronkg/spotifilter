@@ -155,6 +155,7 @@ def format_explicit_result(explicitly_result):
 
     if result:
         title, artist, _, reasons, examples = result[0]
+        reasons = re.sub(r"'", "", reasons)
         examples = re.sub(r'\*', r'\\*', examples)
         message = str(f"🔞 *Title:* {title}\n"
                       f"🎤 *Artist:* {artist}\n"
