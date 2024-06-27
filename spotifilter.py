@@ -5,6 +5,7 @@ import asyncio
 import os
 import re
 import time
+import logging
 from typing import Final
 
 import requests
@@ -212,6 +213,15 @@ async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main():
+    # Logging
+    logger = logging.getLogger("spotifilter")
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
     app = Application.builder().token(BOT_TOKEN).concurrent_updates(True).build()
 
     # Commands
