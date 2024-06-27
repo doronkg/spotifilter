@@ -21,8 +21,8 @@ Spotifilter harnesses ChatGPT to effortlessly filter explicit tracks from your S
 
 ## Limitations
 
-1. `Spotifiler` was only tested on English-language playlists (follow-up in [#10](https://github.com/doronkg/spotifilter/issues/10)).
-2. `/filter` command can only accept input in the same message and not as a conversation (follow-up in [#8](https://github.com/doronkg/spotifilter/issues/8)).
+1. `Spotifiler` was only tested on English-language playlists.
+2. `/filter` command can only accept input in the same message and not as a conversation.
 
 # Self Hosting
 
@@ -38,10 +38,10 @@ Once you've acquired all the required credentials, fill these in under `.env` fi
 In addition, `Spotifilter` makes use of multiple Python modules to enhance API capabilities against Spotify, GeniusLyrics, OpenAI and Telegram.
 
 ```bash
-(Optional - use Virtual Environment for development)
+# (Optional - use Virtual Environment for development)
 $ python -m venv .venv
 $ .venv/Scripts/Activate.ps1 # PowerShell
-OR
+# OR
 $ source .venv/scripts/activate # bash/zsh
 
 $ pip install -r requirements.txt
