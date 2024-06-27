@@ -1,6 +1,6 @@
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 
-![logo](./images/logo.png)
+<img alt="logo" src="./images/logo.png" width=50% height=50% border="2px solid #555">
 
 # Spotifilter
 
@@ -12,14 +12,15 @@ Spotifilter harnesses ChatGPT to effortlessly filter explicit tracks from your S
 1. `/filter` - Filter public Spotify playlist by ID / link.
 2. `/report` - Report an issue or request feature.
 
-![valid_playlist](./images/valid_playlist.png)
+## Examples
+<img alt="valid_playlist" src="./images/valid_playlist.png" width=75% height=75% border="2px solid #555">
 
-![explicit_playlist](./images/explicit_playlist.png)
+<img alt="explicit_playlist" src="./images/explicit_playlist.png" width=75% height=75% border="2px solid #555">
 
 ## Limitations
 
-1. `Spotifiler` was only tested on English-language playlists (follow-up in #10).
-2. `/filter` command can only accept input in the same message and not as a conversation (follow-up in #8).
+1. `Spotifiler` was only tested on English-language playlists (follow-up in [#10](https://github.com/doronkg/spotifilter/issues/10)).
+2. `/filter` command can only accept input in the same message and not as a conversation (follow-up in [#8](https://github.com/doronkg/spotifilter/issues/8)).
 
 # Self Hosting
 
