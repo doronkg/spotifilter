@@ -198,7 +198,6 @@ async def filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         await update.message.reply_text(report[x:x+4096], parse_mode=ParseMode.MARKDOWN_V2)
                 else:
                     await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
-                #await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN_V2)
             except TelegramError as e:
                 print(e)
                 await update.message.reply_text("An error occurred. Validate your input and retry, or run /report")
