@@ -270,7 +270,7 @@ def logic(playlist_id: str) -> str:
                 response += "\n" + track
 
         if len(unfetched_tracks) > 0:
-            response += "\nCouldn't fetch lyrics for these tracks (sorry 😕):\n"
+            response += "\nCouldn't fetch lyrics for these tracks:\n"
             for track in unfetched_tracks:
                 response += track
         return parse_response(response)
